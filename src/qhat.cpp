@@ -214,9 +214,9 @@ Qhat_2to2::Qhat_2to2(QhatXsection_2to2 * Xprocess_, int degeneracy_, double eta_
    degeneracy(degeneracy_), eta_2(eta_2_),
    NE1(101), NT(10), E1L(M*1.01), E1H(M*100), TL(0.15), TH(0.60),
    dE1((E1H - E1L)/(NE1 -1.)), dT((TH - TL)/(NT -1.)),
-   QhatTab(boost::extents[4][NE1][NT]),
-   Qhat1Tab(boost::extents[4][NE1][NT]),
-   Qhat2Tab(boost::extents[4][NE1][NT])
+   QhatTab(boost::extents[3][NE1][NT]),
+   Qhat1Tab(boost::extents[3][NE1][NT]),
+   Qhat2Tab(boost::extents[3][NE1][NT])
 {
         bool fileexist = boost::filesystem::exists(name_);
         if ((!fileexist) || (fileexist && refresh))
@@ -259,7 +259,7 @@ Qhat_2to2::Qhat_2to2(QhatXsection_2to2 * Xprocess_, int degeneracy_, double eta_
 void Qhat_2to2::save_to_file(H5::H5File *file, std::string datasetname, int index)
 {
         const size_t rank=3;
-        hsize_t dims[rank] = {4, NE1, NT};
+        hsize_t dims[rank] = {3, NE1, NT};
         H5::DSetCreatPropList proplist{};
         proplist.setChunk(rank, dims);
 
@@ -300,7 +300,7 @@ void Qhat_2to2::read_from_file(H5::H5File * file, std::string datasetname, int i
         if (index==2) Qhat2Tab.resize(boost::extents[4][NE1][NT]);
 
         hsize_t dims_mem[rank];
-        dims_mem[0] = 4;
+        dims_mem[0] = 3;
         dims_mem[1] = NE1;
         dims_mem[2] = NT;
 
@@ -316,7 +316,30 @@ void Qhat_2to2::read_from_file(H5::H5File * file, std::string datasetname, int i
 }
 
 
+void Qhat_2to2::tabulate_E1_T(size_t T_start, size_t dnT)
+{
+        double *args = new double[4];
+        for (size_t i=0; i < NE1; ++i)
+        {
+                args[0] = E1L + i * dE1;
+                for (size_t j = T_start; j < (T_start + dnT) ; ++j)
+                {
+                        args[1] = TL + j * dT;
+                        args[2] = 0.;
+                        args[3] = 1; double drag = calculate(args);
+                        args[3] = 2; double kperp = calculate(args);
+                        args[3] = 3; double kpara = calculate(args);
+                        QhatTab[0][i][j] = drag;
+                        QhatTab[1][i][j] = kperp;
+                        QhatTab[2][i][j] = kpara - drag*drag;
+                }
+        }
 
+        delete [] args;
+}
+
+
+/*
 void Qhat_2to2::tabulate_E1_T(size_t T_start, size_t dnT)
 {
         double *args = new double[4];
@@ -342,7 +365,7 @@ void Qhat_2to2::tabulate_E1_T(size_t T_start, size_t dnT)
         
         delete [] args;
 }
-
+*/
 
 
 double Qhat_2to2::interpQ(double * args)
