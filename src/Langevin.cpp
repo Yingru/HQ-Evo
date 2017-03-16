@@ -73,14 +73,14 @@ int update_by_Langevin_test(particle& HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQ
         args[0] = HQ.p[0];
         args[1] = temp;
         args[2] = 0.0;
-        args[3] = 1; drag_Qq = qhatQq2Qq->interpQ(args); drag_Qg = qhatQg2Qg->interpQ(args);
-        args[3] = 2; kperp_Qq = qhatQq2Qq->interpQ(args); kperp_Qg = qhatQg2Qg->interpQ(args);
-        args[3] = 3; kpara_Qq = qhatQq2Qq->interpQ(args); kpara_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 0; drag_Qq = qhatQq2Qq->interpQ(args); drag_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 1; kperp_Qq = qhatQq2Qq->interpQ(args); kperp_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 2; kpara_Qq = qhatQq2Qq->interpQ(args); kpara_Qg = qhatQg2Qg->interpQ(args);
         delete [] args;
 
         drag = (drag_Qq + drag_Qg)/p_length * GeV_to_Invfm;
         kperp = (kperp_Qq + kperp_Qg) * GeV_to_Invfm;
-        kpara = ((kpara_Qq - drag_Qq*drag_Qq) + (kpara_Qg - drag_Qg*drag_Qg) ) * GeV_to_Invfm;
+        kpara = (kpara_Qq  + kpara_Qg) * GeV_to_Invfm;
         if (EinR)    drag = kperp/(2*temp*HQ.p[0]);
         //std::cout << "Langevin: " << HQ.p[0] << " " << drag << " " << kperp << " " << kpara << std::endl;
 
@@ -112,15 +112,15 @@ int update_by_Langevin_test(particle& HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQ
         args_[0] = new_energy;
         args_[1] = temp;
         args_[2] = 0.0;
-        args_[3] = 1; new_drag_Qq = qhatQq2Qq->interpQ(args_); new_drag_Qg = qhatQg2Qg->interpQ(args_);
-        args_[3] = 2; new_kperp_Qq = qhatQq2Qq->interpQ(args_); new_kperp_Qg = qhatQg2Qg->interpQ(args_);
-        args_[3] = 3; new_kpara_Qq = qhatQq2Qq->interpQ(args_); new_kpara_Qg = qhatQg2Qg->interpQ(args_);
+        args_[3] = 0; new_drag_Qq = qhatQq2Qq->interpQ(args_); new_drag_Qg = qhatQg2Qg->interpQ(args_);
+        args_[3] = 1; new_kperp_Qq = qhatQq2Qq->interpQ(args_); new_kperp_Qg = qhatQg2Qg->interpQ(args_);
+        args_[3] = 2; new_kpara_Qq = qhatQq2Qq->interpQ(args_); new_kpara_Qg = qhatQg2Qg->interpQ(args_);
         delete [] args_;
 
         new_drag = (new_drag_Qq + new_drag_Qg) * GeV_to_Invfm;
         new_kperp = (new_kperp_Qq + new_kperp_Qg) * GeV_to_Invfm;
         
-        new_kpara = ((new_kpara_Qq - new_drag_Qq*new_drag_Qq) + (new_kpara_Qg - new_drag_Qg*new_drag_Qg) ) * GeV_to_Invfm;
+        new_kpara = (new_kpara_Qq +  new_kpara_Qg ) * GeV_to_Invfm;
 
         xi[0] = std::sqrt(new_kperp/deltat_lrf) * rho_xi[0];
         xi[1] = std::sqrt(new_kperp/deltat_lrf) * rho_xi[1];
@@ -226,14 +226,14 @@ int update_by_Langevin(particle &HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQg2Qg,
         args[0] = HQ.p[0];
         args[1] = temp;
         args[2] = 0.0;
-        args[3] = 1; drag_Qq = qhatQq2Qq->interpQ(args); drag_Qg = qhatQg2Qg->interpQ(args);
-        args[3] = 2; kperp_Qq = qhatQq2Qq->interpQ(args); kperp_Qg = qhatQg2Qg->interpQ(args);
-        args[3] = 3; kpara_Qq = qhatQq2Qq->interpQ(args); kpara_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 0; drag_Qq = qhatQq2Qq->interpQ(args); drag_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 1; kperp_Qq = qhatQq2Qq->interpQ(args); kperp_Qg = qhatQg2Qg->interpQ(args);
+        args[3] = 2; kpara_Qq = qhatQq2Qq->interpQ(args); kpara_Qg = qhatQg2Qg->interpQ(args);
         delete [] args;
 
         drag = (drag_Qq + drag_Qg) / p_length * GeV_to_Invfm;
         kperp = (kperp_Qq + kperp_Qg) * GeV_to_Invfm;
-        kpara = ((kpara_Qq - drag_Qq*drag_Qq) + (kpara_Qg - drag_Qg*drag_Qg)) * GeV_to_Invfm;
+        kpara = (kpara_Qq  + kpara_Qg) * GeV_to_Invfm;
         if (EinR) drag = kperp/(2*temp*HQ.p[0]);
         std::vector<double> pre_result = Langevin_pre(HQ.p[0], M, temp, drag, kperp, kpara, deltat_lrf);
         std::vector<double> new_p = {pre_result[0], pre_result[1], pre_result[2]};
@@ -241,22 +241,18 @@ int update_by_Langevin(particle &HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQg2Qg,
 
 
         double new_Energy = std::sqrt(M*M + new_p[0]*new_p[0] + new_p[1]*new_p[1] + new_p[2]*new_p[2]);
-        double new_drag_Qq, new_drag_Qg, new_drag;
-        double new_kperp_Qq, new_kperp_Qg, new_kperp;
-        double new_kpara_Qq, new_kpara_Qg, new_kpara;
 
         double* args_ = new double[4];
         args_[0] = new_Energy;
         args_[1] = temp;
         args_[2] = 0.0;
-        args_[3] = 1; new_drag_Qq = qhatQq2Qq->interpQ(args); new_drag_Qg = qhatQg2Qg->interpQ(args);
-        args_[3] = 2; new_kperp_Qq = qhatQq2Qq->interpQ(args); new_kperp_Qg = qhatQg2Qg->interpQ(args);
-        args_[3] = 3; new_kpara_Qq = qhatQq2Qq->interpQ(args); new_kpara_Qg = qhatQg2Qg->interpQ(args);
+        args_[3] = 1; kperp_Qq = qhatQq2Qq->interpQ(args); kperp_Qg = qhatQg2Qg->interpQ(args);
+        args_[3] = 2; kpara_Qq = qhatQq2Qq->interpQ(args); kpara_Qg = qhatQg2Qg->interpQ(args);
         delete [] args_;
 
-        new_kperp = (new_kperp_Qq + new_kperp_Qg) * GeV_to_Invfm;
-        new_kpara = ((new_kpara_Qq - new_drag_Qq*new_drag_Qq) + (new_kpara_Qg - new_drag_Qg*new_drag_Qg)) * GeV_to_Invfm;
-        new_p = Langevin_post(HQ.p[0], M, temp, drag, new_kperp, new_kpara, deltat_lrf, pre_result);
+        kperp = (kperp_Qq + kperp_Qg) * GeV_to_Invfm;
+        kpara = (kpara_Qq + kpara_Qg) * GeV_to_Invfm;
+        new_p = Langevin_post(HQ.p[0], M, temp, drag, kperp, kpara, deltat_lrf, pre_result);
 
        
         // rotate back from Z direction to lrf frame
