@@ -61,14 +61,14 @@ cdef class pyQhat2to2:
                 self.cQhat2to2 = new Qhat_2to2(x2to2.cQhatX2to2, degeneracy, eta2, filename, refresh)
 
         cpdef double calculate(self, double &E1, double &Temp, int &iweight, int &qidx):
-                cdef double * args = <double*>malloc(3*sizeof(double))
+                cdef double * args = <double*>malloc(4*sizeof(double))
                 args[0] = E1; args[1] = Temp; args[2] = iweight; args[3] = qidx
                 cdef double result = self.cQhat2to2.calculate(args)
                 free(args)
                 return result
 
         cpdef double interpQ(self, double &E1, double &Temp, int &iweight, int &qidx):
-                cdef double * args = <double*>malloc(3*sizeof(double))
+                cdef double * args = <double*>malloc(4*sizeof(double))
                 args[0] = E1; args[1] = Temp; args[2] = iweight; args[3] = qidx
                 cdef double result = self.cQhat2to2.interpQ(args)
                 free(args)
@@ -83,10 +83,10 @@ cdef extern from "../src/Langevin.h":
 
 #------------ Heavy quark Langevin transport evolution class -------------
 cdef class HqLGV:
-        cdef bool elastic
-        cdef bool EinR
+        cdef bool elastic, EinR
+        cdef object qhat_Qq2Qq, qhat_Qg2Qg  # no need to qhatX_Qq2Qq object, since we are not actually publicly using them....
         cdef size_t Nchannels, N22
-        cdef double mass, deltat_ltf
+        cdef double mass, deltat_lrf
         def __cinit__(self, mass =1.3, elastic = True, EinR = False, deltat_lrf=0.01, table_folder='./tables', refresh_table=False):
                 self.elastic = elastic
                 self.EinR = EinR
@@ -98,10 +98,10 @@ cdef class HqLGV:
                 if self.elastic:
                         qhatX_Qq2Qq = pyQhatX2to2('Qq->Qq', mass, "%s/QhatX_Qq2Qq.hdf5"%table_folder, refresh_table)
                         qhatX_Qg2Qg = pyQhatX2to2('Qg->Qg', mass, "%s/QhatX_Qg2Qg.hdf5"%table_folder, refresh_table)
-                        qhat_Qq2Qq = pyQhat2to2(qhatX_Qq2Qq, 36., 0., "%s/Qhat_Qq2Qq.hdf5"%table_folder, refresh_table)
-                        qhat_Qg2Qg = pyQhat2to2(qhatX_Qg2Qg, 16., 0., "%s/Qhat_Qg2Qg.hdf5"%table_folder, refresh_table)
+                        self.qhat_Qq2Qq = pyQhat2to2(qhatX_Qq2Qq, 36., 0., "%s/Qhat_Qq2Qq.hdf5"%table_folder, refresh_table)
+                        self.qhat_Qg2Qg = pyQhat2to2(qhatX_Qg2Qg, 16., 0., "%s/Qhat_Qg2Qg.hdf5"%table_folder, refresh_table)
         
-        # giving the incoming heavy quark energy E1 in cell frame, return new_p(px, py, pz) in (0, 0, p_length) frame
+        # giving the incoming heavy quark energy E1 in cell frame, return new_p(p0, px, py, pz) in (0, 0, p_length) frame
         cpdef update_by_Langevin(self, double E1, double temp):
                 cdef double GeV_to_Invfm = 5.068
                 cdef double drag_Qq, drag_Qg, drag, kperp_Qq, kperp_Qg, kperp, kpara_Qq, kpara_Qg
@@ -109,7 +109,7 @@ cdef class HqLGV:
                 drag_Qq = self.qhat_Qq2Qq.interpQ(E1, temp, 0, 0)
                 drag_Qg = self.qhat_Qg2Qg.interpQ(E1, temp, 0, 0)
                 kperp_Qq = self.qhat_Qq2Qq.interpQ(E1, temp, 0, 1)
-                kperp_Qg = self.qaht_Qg2Qg.interpQ(E1, temp, 0, 1)
+                kperp_Qg = self.qhat_Qg2Qg.interpQ(E1, temp, 0, 1)
                 kpara_Qq = self.qhat_Qq2Qq.interpQ(E1, temp, 0, 2)
                 kpara_Qg = self.qhat_Qg2Qg.interpQ(E1, temp, 0, 2)
 
@@ -124,7 +124,7 @@ cdef class HqLGV:
                 cdef double new_energy = sqrt(self.mass**2 + pre_result[0]**2 + pre_result[1]**2 + pre_result[2]**2)
 
                 kperp_Qq = self.qhat_Qq2Qq.interpQ(new_energy, temp, 0, 1)
-                kperp_Qg = self.qaht_Qg2Qg.interpQ(new_energy, temp, 0, 1)
+                kperp_Qg = self.qhat_Qg2Qg.interpQ(new_energy, temp, 0, 1)
                 kpara_Qq = self.qhat_Qq2Qq.interpQ(new_energy, temp, 0, 2)
                 kpara_Qg = self.qhat_Qg2Qg.interpQ(new_energy, temp, 0, 2)
 

@@ -173,12 +173,13 @@ std::vector<double> Langevin_pre(double E, double M, double temp, double drag, d
         xi[2] = std::sqrt(kpara/deltat_lrf) * rho_xi[2];
 
         
-        std::vector<double> new_p(3, 0.0);
-        new_p[0] = xi[0] * deltat_lrf;
-        new_p[1] = xi[1] * deltat_lrf;
-        new_p[2] = p_length + (-drag * p_length + xi[2]) *deltat_lrf;
+        std::vector<double> new_p(4, 0.0);
+        new_p[1] = xi[0] * deltat_lrf;
+        new_p[2] = xi[1] * deltat_lrf;
+        new_p[3] = p_length + (-drag * p_length + xi[2]) *deltat_lrf;
+        new_p[0] = std::sqrt(M*M + new_p[0]*new_p[0] + new_p[1]*new_p[1] + new_p[2]*new_p[2]);
 
-        std::vector<double> result={new_p[0], new_p[1], new_p[2], rho_xi[0], rho_xi[1], rho_xi[2]};
+        std::vector<double> result={new_p[0], new_p[1], new_p[2], new_p[3], rho_xi[0], rho_xi[1], rho_xi[2]};
 
         // what returns is the new_p in pZ frame, and the recorded gaussian noise
         // if there is no second step, it will be pre-point scheme Langevin
@@ -192,7 +193,7 @@ std::vector<double> Langevin_pre(double E, double M, double temp, double drag, d
 std::vector<double> Langevin_post(double E, double M, double temp, double drag, double kpara, double kperp, double deltat_lrf, std::vector<double> const& pre_result)
 {
         // use the pre-point stored rho
-        std::vector<double> rho={pre_result[3], pre_result[4], pre_result[5]};
+        std::vector<double> rho={pre_result[4], pre_result[5], pre_result[6]};
 
         double p_length = std::sqrt(E*E - M*M);
         
@@ -201,10 +202,11 @@ std::vector<double> Langevin_post(double E, double M, double temp, double drag, 
         xi[1] = std::sqrt(kperp/deltat_lrf) * rho[1];
         xi[2] = std::sqrt(kpara/deltat_lrf) * rho[2];
 
-        std::vector<double> new_p(3, 0.0);
-        new_p[0] = xi[0] * deltat_lrf;
-        new_p[1] = xi[1] * deltat_lrf;
-        new_p[2] = p_length + (-drag * p_length + xi[2]) * deltat_lrf;
+        std::vector<double> new_p(4, 0.0);
+        new_p[1] = xi[0] * deltat_lrf;
+        new_p[2] = xi[1] * deltat_lrf;
+        new_p[3] = p_length + (-drag * p_length + xi[2]) * deltat_lrf;
+        new_p[0] = std::sqrt(M*M + new_p[1]*new_p[1] + new_p[2]*new_p[2] + new_p[3]*new_p[3]);
 
         return new_p;
 }
@@ -236,11 +238,11 @@ int update_by_Langevin(particle &HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQg2Qg,
         kpara = (kpara_Qq  + kpara_Qg) * GeV_to_Invfm;
         if (EinR) drag = kperp/(2*temp*HQ.p[0]);
         std::vector<double> pre_result = Langevin_pre(HQ.p[0], M, temp, drag, kperp, kpara, deltat_lrf);
-        std::vector<double> new_p = {pre_result[0], pre_result[1], pre_result[2]};
+        std::vector<double> new_p = {pre_result[0], pre_result[1], pre_result[2], pre_result[3]};
 
 
 
-        double new_Energy = std::sqrt(M*M + new_p[0]*new_p[0] + new_p[1]*new_p[1] + new_p[2]*new_p[2]);
+        double new_Energy = new_p[0];
 
         double* args_ = new double[4];
         args_[0] = new_Energy;
@@ -252,13 +254,14 @@ int update_by_Langevin(particle &HQ, Qhat_2to2* qhatQq2Qq, Qhat_2to2* qhatQg2Qg,
 
         kperp = (kperp_Qq + kperp_Qg) * GeV_to_Invfm;
         kpara = (kpara_Qq + kpara_Qg) * GeV_to_Invfm;
-        new_p = Langevin_post(HQ.p[0], M, temp, drag, kperp, kpara, deltat_lrf, pre_result);
+        std::vector<double> post_result = Langevin_post(HQ.p[0], M, temp, drag, kperp, kpara, deltat_lrf, pre_result);
 
+        std::vector<double> new3_p = {post_result[1], post_result[2], post_result[3]};
        
         // rotate back from Z direction to lrf frame
 
         std::vector<double> p_lrf(3, 0.0);
-        p_lrf = rotate_fromZ(new_p, HQ.p[1], HQ.p[2], HQ.p[3]);
+        p_lrf = rotate_fromZ(new3_p, HQ.p[1], HQ.p[2], HQ.p[3]);
 
         for (size_t i=0; i<3; ++i)
         {
