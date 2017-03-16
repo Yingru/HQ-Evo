@@ -11,16 +11,14 @@ for key, value in cfg_vars.items():
 """
 #-------------HqEvo Module------------------
 filelist1 = list(set(['cython/HqEvo.pyx'] + glob('src/*.cpp'))-set(["src/main.cpp"]))
+filelist2 = list(set(['cython/HqLGV.pyx'] + glob('src/*elements.cpp') + glob('src/qhat_Xsection.cpp') + glob('src/qhat.cpp') + glob('src/Langevin.cpp')))
+filelist3 = list(set(['cython/HqLGV.pyx'] + glob('src/*.cpp'))-set(["src/main.cpp"]))
+
 extensions = [
-    Extension(
-        'HqEvo',
-		filelist1,
-		 language="c++",
-        extra_compile_args=["-std=c++11"],
-		libraries=["m", "gsl", "gslcblas", "boost_filesystem", "hdf5", "hdf5_cpp"])
+        Extension('HqEvo', filelist1, language="c++", extra_compile_args=["-std=c++11"],libraries=["m", "gsl", "gslcblas", "boost_filesystem", "hdf5", "hdf5_cpp"]),
+        Extension('HqLGV', filelist3, language="c++", extra_compile_args=["-std=c++11"],libraries=["m", "gsl", "gslcblas", "boost_filesystem", "hdf5", "hdf5_cpp"])
 ]
 
 setup(
-    ext_modules=cythonize(extensions)
-	)
-
+        ext_modules=cythonize(extensions)
+)
